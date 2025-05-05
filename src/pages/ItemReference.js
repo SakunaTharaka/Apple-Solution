@@ -201,6 +201,8 @@ export default function ItemReference() {
               <option value="Mobile Phone Casing">Mobile Phone Casing</option>
               <option value="Tempered Glasses">Tempered Glasses</option>
               <option value="Power Banks">Power Banks</option>
+              <option value="powerpin">Power Pin</option>
+              <option value="mother boards">Mother Boards</option>
               <option value="batteries">Batteries</option>
               <option value="Other item">Other item</option>
             </select>
