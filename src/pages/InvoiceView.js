@@ -61,8 +61,8 @@ export default function InvoiceView() {
 
       <div style={{ textAlign: "center", marginBottom: 20 }}>
         <h1 style={{ fontSize: 28 }}>Apple Solutions Mobile Shop</h1>
-        <p>No.55/10 Dadugama, Ja-Ela</p>
-        <p>Call us: 077 123 4568</p>
+        <p>No.503/1 Dadugama, Ja-Ela</p>
+        <p>Call us: 070 223 5199</p>
       </div>
 
       <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginBottom: 20 }}>

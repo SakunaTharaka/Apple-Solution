@@ -87,6 +87,9 @@ export default function ProductPage() {
       "Mobile Phone Casing": "MC",
       "Tempered Glasses": "TG",
       "Power Banks": "PB",
+      "Batteries": "BB",
+      "Mother Boards": "MB",
+      "Charging Pin": "CP",
       "Other Item": "OI",
     };
     const prefix = prefixes[type] || "XX";

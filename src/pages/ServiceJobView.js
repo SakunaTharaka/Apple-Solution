@@ -210,8 +210,8 @@ export default function ServiceJobView() {
       <div className="header">
         <div className="company-name">Apple Solutions Mobile Shop</div>
         <div className="company-info">
-          <div>No.55/10 Dadugama, Ja-Ela</div>
-          <div>📞 077 123 4568 | ✉️ support@applesolutions.lk</div>
+          <div>No.503/1 Dadugama, Ja-Ela</div>
+          <div>📞 070 223 5199 | Find Us on Facebook </div>
         </div>
       </div>
 
@@ -330,7 +330,7 @@ export default function ServiceJobView() {
       <div className="footer">
         <div style={{ marginBottom: 15 }}>Thank you for choosing Apple Solutions!</div>
         <div style={{ fontSize: 12 }}>
-          System by Wayne Solutions | 📱 078 722 3407 (Sakuna)
+          System by Wayne Solutions |  078 722 3407 (Sakuna)
           <br />
           {new Date().toLocaleDateString()}
         </div>
