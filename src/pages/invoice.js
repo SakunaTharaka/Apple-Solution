@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   serverTimestamp,
   runTransaction,
@@ -17,83 +17,46 @@ const Invoice = () => {
   const navigate = useNavigate();
   
   // State declarations
-  const [makers, setMakers] = useState([]);
-  const [types, setTypes] = useState([]);
-  const [itemsList, setItemsList] = useState([]);
-  const [stockIds, setStockIds] = useState([]);
-  const [maker, setMaker] = useState("");
-  const [type, setType] = useState("");
-  const [item, setItem] = useState("");
-  const [stockId, setStockId] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [price, setPrice] = useState(0);
-  const [originalPrice, setOriginalPrice] = useState(0);
+  const [allItems, setAllItems] = useState([]);
   const [lineItems, setLineItems] = useState([]);
   const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
   const [invoiceNumber, setInvoiceNumber] = useState("Loading...");
   const [reference, setReference] = useState("");
+  const [itemSearch, setItemSearch] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [originalPrice, setOriginalPrice] = useState(0);
   const [priceChanged, setPriceChanged] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [selectedItemDisplay, setSelectedItemDisplay] = useState("");
+  
+  const itemInputRef = useRef(null);
+  const qtyInputRef = useRef(null);
+  const priceInputRef = useRef(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // Fetch initial pricing data
-  useEffect(() => {
-    async function fetchPricing() {
-      const snap = await getDocs(collection(db, "pricing"));
-      const pricingData = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const uniqueMakers = [...new Set(pricingData.map((p) => p.maker))];
-      setMakers(uniqueMakers);
-    }
-    fetchPricing();
-  }, []);
-
-  // Fetch types based on maker
-  useEffect(() => {
-    async function fetchTypes() {
-      const snap = await getDocs(collection(db, "pricing"));
-      const filtered = snap.docs.map((d) => d.data()).filter((p) => p.maker === maker);
-      const types = [...new Set(filtered.map((p) => p.type))];
-      setTypes(types);
-    }
-    if (maker) fetchTypes();
-  }, [maker]);
-
-  // Fetch items based on maker and type
+  // Fetch all items
   useEffect(() => {
     async function fetchItems() {
       const snap = await getDocs(collection(db, "pricing"));
-      const filtered = snap.docs
-        .map((d) => d.data())
-        .filter((p) => p.maker === maker && p.type === type);
-      const items = [...new Set(filtered.map((p) => p.item))];
-      setItemsList(items);
+      const items = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAllItems(items);
     }
-    if (maker && type) fetchItems();
-  }, [maker, type]);
-
-  // Fetch stock IDs
-  useEffect(() => {
-    async function fetchStockIds() {
-      if (maker && type && item) {
-        const q = query(
-          collection(db, "pricing"),
-          where("maker", "==", maker),
-          where("type", "==", type),
-          where("item", "==", item)
-        );
-        const snap = await getDocs(q);
-        const stocks = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setStockIds(stocks);
-      } else {
-        setStockIds([]);
-      }
-    }
-    fetchStockIds();
-  }, [maker, type, item]);
+    fetchItems();
+  }, []);
 
   // Generate invoice number
   useEffect(() => {
     async function getNextInvoiceNumber() {
+      // Check if we already have a pending invoice number
+      const pendingInvoiceNumber = sessionStorage.getItem("pendingInvoiceNumber");
+      if (pendingInvoiceNumber) {
+        setInvoiceNumber(pendingInvoiceNumber);
+        return;
+      }
+
       const counterRef = doc(db, "counters", "invoiceCounter");
       const nextInvoiceNumber = await runTransaction(db, async (transaction) => {
         const counterSnap = await transaction.get(counterRef);
@@ -106,122 +69,172 @@ const Invoice = () => {
         transaction.update(counterRef, { current: next });
         return next;
       });
-      setInvoiceNumber(nextInvoiceNumber.toString().padStart(5, "0"));
+      
+      const formattedNumber = nextInvoiceNumber.toString().padStart(5, "0");
+      setInvoiceNumber(formattedNumber);
+      sessionStorage.setItem("pendingInvoiceNumber", formattedNumber);
     }
     getNextInvoiceNumber();
   }, []);
 
-  // Handler functions
-  const handleStockIdChange = async (e) => {
-    const enteredId = e.target.value.trim();
-    setStockId(enteredId);
+  // Search items when itemSearch changes
+  useEffect(() => {
+    if (!itemSearch) {
+      setSearchResults([]);
+      setActiveIndex(-1);
+      return;
+    }
+    
+    const term = itemSearch.toLowerCase();
+    const results = allItems.filter(item => 
+      (item.maker && item.maker.toLowerCase().includes(term)) ||
+      (item.type && item.type.toLowerCase().includes(term)) ||
+      (item.item && item.item.toLowerCase().includes(term)) ||
+      (item.id && item.id.toLowerCase().includes(term))
+    ).slice(0, 5);
+    
+    setSearchResults(results);
+    setActiveIndex(-1);
+  }, [itemSearch, allItems]);
 
-    if (enteredId.length >= 7 || enteredId.toLowerCase() === "special") {
-      const pricingRef = doc(db, "pricing", enteredId);
-      const pricingSnap = await getDoc(pricingRef);
-
-      if (pricingSnap.exists()) {
-        const data = pricingSnap.data();
-        if (!data.price || data.price <= 0) {
-          alert("This item does not have a valid price. It cannot be added.");
-          setMaker(""); setType(""); setItem(""); 
-          setPrice(0); setOriginalPrice(0);
-          return;
-        }
-        setMaker(data.maker || "");
-        setType(data.type || "");
-        setItem(data.item || "");
-        setPrice(data.price);
-        setOriginalPrice(data.price);
-        setPriceChanged(false);
-      } else if (enteredId.toLowerCase() === "special") {
-        alert("Proceeding with special item");
-        setMaker("Special");
-        setType("Special");
-        setItem("Special Item");
-        setPrice(0);
-        setOriginalPrice(0);
-      } else {
-        alert("Stock ID not found in pricing!");
-        setMaker(""); setType(""); setItem(""); 
-        setPrice(0); setOriginalPrice(0);
+  // Handle keyboard navigation in search results
+  const handleKeyDown = (e) => {
+    if (searchResults.length === 0) return;
+    
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : 0));
+    } 
+    else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex(prev => (prev > 0 ? prev - 1 : searchResults.length - 1));
+    } 
+    else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIndex >= 0 && activeIndex < searchResults.length) {
+        handleItemSelect(searchResults[activeIndex]);
       }
     }
   };
 
-  const handleStockSelect = async (e) => {
-    const selectedId = e.target.value;
-    setStockId(selectedId);
-
-    const pricingRef = doc(db, "pricing", selectedId);
-    const pricingSnap = await getDoc(pricingRef);
-
-    if (pricingSnap.exists()) {
-      const data = pricingSnap.data();
-      if (!data.price || data.price <= 0) {
-        alert("This item does not have a valid price. It cannot be added.");
-        setMaker(""); setType(""); setItem(""); 
-        setPrice(0); setOriginalPrice(0);
-        return;
-      }
-      setMaker(data.maker || "");
-      setType(data.type || "");
-      setItem(data.item || "");
-      setPrice(data.price);
-      setOriginalPrice(data.price);
-      setPriceChanged(false);
-    } else {
-      alert("Pricing document not found for this stock ID");
-      setMaker(""); setType(""); setItem(""); 
-      setPrice(0); setOriginalPrice(0);
+  // Handle item selection
+  const handleItemSelect = (item) => {
+    if (!item.price || item.price <= 0) {
+      alert("This item does not have a valid price. It cannot be added.");
+      return;
     }
+    
+    // Set the display text for the selected item
+    const displayText = `${item.maker} ${item.type} ${item.item}`;
+    setItemSearch(displayText);
+    setSelectedItemDisplay(displayText);
+    
+    setPrice(item.price);
+    setOriginalPrice(item.price);
+    setPriceChanged(false);
+    
+    // Close the dropdown
+    setSearchResults([]);
+    
+    // Focus quantity field
+    setTimeout(() => {
+      if (qtyInputRef.current) {
+        qtyInputRef.current.focus();
+        qtyInputRef.current.select();
+      }
+    }, 10);
   };
 
+  // Handle price change
   const handlePriceChange = (e) => {
     const newPrice = Number(e.target.value);
     setPrice(newPrice);
     setPriceChanged(newPrice !== originalPrice);
   };
 
+  // Handle key press in form fields
+  const handleFieldKeyPress = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      // If in price field, add the line
+      if (e.target === priceInputRef.current) {
+        addLine();
+      }
+      // If in quantity field, focus price field
+      else if (e.target === qtyInputRef.current) {
+        priceInputRef.current.focus();
+        priceInputRef.current.select();
+      }
+    }
+  };
+
+  // Add line item
   const addLine = () => {
-    if (!maker || !type || !item || !stockId || price <= 0) {
+    if (quantity <= 0) {
+      alert("Quantity must be greater than 0");
+      return;
+    }
+    
+    if (!itemSearch || price <= 0) {
       alert("Cannot add line with missing fields or invalid price.");
       return;
     }
-
-    const priceChangedFlag = price !== originalPrice ? 1 : 0;
-
+    
+    // Find the selected item
+    const selectedItem = allItems.find(item => 
+      `${item.maker} ${item.type} ${item.item}` === selectedItemDisplay
+    );
+    
+    if (!selectedItem) {
+      alert("Please select a valid item from the list");
+      return;
+    }
+    
+    const priceChangedFlag = price !== selectedItem.price ? 1 : 0;
+    
     setLineItems([
       ...lineItems,
       {
-        maker,
-        type,
-        item,
+        maker: selectedItem.maker || "Unknown",
+        type: selectedItem.type || "Unknown",
+        item: selectedItem.item || "Unknown",
         quantity,
         price,
-        stockId,
-        originalPrice,
+        stockId: selectedItem.id,
+        originalPrice: selectedItem.price,
         changed_price: priceChangedFlag,
       },
     ]);
 
     // Reset form fields
-    setMaker("");
-    setType("");
-    setItem("");
+    setItemSearch("");
+    setSelectedItemDisplay("");
     setQuantity(1);
     setPrice(0);
     setOriginalPrice(0);
-    setStockId("");
     setPriceChanged(false);
+    setSearchResults([]);
+    setActiveIndex(-1);
+    
+    // Focus back to item search
+    setTimeout(() => {
+      if (itemInputRef.current) {
+        itemInputRef.current.focus();
+      }
+    }, 10);
   };
 
+  // Delete line item
   const deleteLine = (index) => {
     setLineItems((prev) => prev.filter((_, idx) => idx !== index));
   };
 
+  // Save invoice
   const handleSave = async () => {
     if (!lineItems.length) return alert("Add at least one line item");
+    
+    // Clear pending invoice number from session storage
+    sessionStorage.removeItem("pendingInvoiceNumber");
 
     const hasPriceChanges = lineItems.some((item) => item.changed_price === 1);
 
@@ -259,12 +272,6 @@ const Invoice = () => {
     borderRadius: "6px",
     fontSize: "14px",
     transition: "border-color 0.3s"
-  };
-
-  const selectStyle = {
-    ...inputStyle,
-    backgroundColor: "white",
-    height: "40px"
   };
 
   return (
@@ -395,7 +402,8 @@ const Invoice = () => {
         borderRadius: "12px",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
         padding: "32px",
-        marginBottom: "40px"
+        marginBottom: "40px",
+        position: "relative"
       }}>
         <h2 style={{ 
           marginTop: 0,
@@ -412,107 +420,99 @@ const Invoice = () => {
           gap: "24px",
           marginBottom: "32px"
         }}>
-          <div>
-            <label style={labelStyle}>Stock ID</label>
+          <div style={{ position: "relative" }}>
+            <label style={labelStyle}>Search Item</label>
             <input
               type="text"
-              value={stockId}
-              onChange={handleStockIdChange}
+              ref={itemInputRef}
+              value={itemSearch}
+              onChange={(e) => setItemSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
               style={inputStyle}
+              placeholder="Type item name or stock ID"
+              autoFocus
             />
+            
+            {searchResults.length > 0 && (
+              <div style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                zIndex: 100,
+                backgroundColor: "white",
+                border: "1px solid #e2e8f0",
+                borderRadius: "6px",
+                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                maxHeight: "300px",
+                overflowY: "auto"
+              }}>
+                {searchResults.map((item, index) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      padding: "10px 12px",
+                      cursor: "pointer",
+                      backgroundColor: index === activeIndex ? "#f0f7ff" : "white",
+                      borderBottom: "1px solid #f0f0f0"
+                    }}
+                    onClick={() => handleItemSelect(item)}
+                  >
+                    <div style={{ fontWeight: "500", marginBottom: "4px" }}>
+                      {item.maker} {item.type} {item.item}
+                    </div>
+                    <div style={{ color: "#38a169", fontSize: "13px" }}>
+                      Stock ID: {item.id}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <div>
-            <label style={labelStyle}>Maker</label>
-            <select
-              value={maker}
-              onChange={(e) => setMaker(e.target.value)}
-              style={selectStyle}
-            >
-              <option value="">Select Maker</option>
-              {makers.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Type</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              style={selectStyle}
-            >
-              <option value="">Select Type</option>
-              {types.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Item</label>
-            <select
-              value={item}
-              onChange={(e) => setItem(e.target.value)}
-              style={selectStyle}
-            >
-              <option value="">Select Item</option>
-              {itemsList.map((i) => (
-                <option key={i} value={i}>{i}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Stock ID Selection</label>
-            <select
-              value={stockId}
-              onChange={handleStockSelect}
-              style={selectStyle}
-            >
-              <option value="">Select Stock ID</option>
-              {stockIds.map((s) => (
-                <option key={s.id} value={s.id}>{s.id}</option>
-              ))}
-            </select>
-          </div>
+          
           <div>
             <label style={labelStyle}>Quantity</label>
             <input
               type="number"
+              ref={qtyInputRef}
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
+              onKeyDown={handleFieldKeyPress}
+              min="1"
               style={inputStyle}
+              placeholder="Press Enter to go to Price"
             />
           </div>
+          
           <div>
-            <label style={labelStyle}>Price</label>
+            <label style={labelStyle}>Price (Rs.)</label>
             <input
               type="number"
+              ref={priceInputRef}
               value={price}
               onChange={handlePriceChange}
+              onKeyDown={handleFieldKeyPress}
               style={{
                 ...inputStyle,
                 backgroundColor: priceChanged ? "#fff3cd" : "white"
               }}
+              placeholder="Press Enter to add item"
             />
           </div>
         </div>
-        <button
-          onClick={addLine}
-          disabled={!maker || !type || !item || !stockId || price <= 0}
-          style={{
-            padding: "12px 32px",
-            backgroundColor: "#3498db",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: "600",
-            transition: "background-color 0.3s",
-            width: "100%"
-          }}
-        >
-          Add Line Item
-        </button>
+        
+        {/* Instruction for quick entry */}
+        <div style={{
+          textAlign: "center",
+          color: "#718096",
+          fontSize: "14px",
+          marginTop: "20px",
+          padding: "10px",
+          backgroundColor: "#f7fafc",
+          borderRadius: "6px"
+        }}>
+          Tip: Press Enter in Price field to add item and start next entry
+        </div>
       </div>
 
       {/* Invoice Lines Section */}

@@ -22,102 +22,221 @@ export default function InvoiceView() {
   const grandTotal = items.reduce((sum, it) => sum + it.quantity * it.price, 0);
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial, sans-serif" }}>
-      {/* Print-friendly styles */}
+    <div className="invoice-container">
       <style>{`
         @media print {
-          .no-print {
-            display: none;
+          @page { margin: 0; }
+          body { 
+            margin: 0 !important; 
+            padding: 2mm !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
-          body {
+          .no-print { display: none !important; }
+          .invoice-container { 
+            box-shadow: none;
             margin: 0;
             padding: 0;
-            font-size: 12pt;
-            color: #000;
+            width: 100% !important;
           }
-          table {
-            page-break-inside: avoid;
+          .header, .section, table, .footer {
+            width: 100% !important;
           }
         }
-        h1, h2, h3, p {
-          margin: 5px 0;
+        
+        body {
+          background: #fff;
         }
+        
+        .invoice-container {
+          width: 140mm;
+          min-height: 200mm;
+          margin: 0 auto;
+          padding: 10mm;
+          font-family: 'Arial', sans-serif;
+          font-size: 12pt;
+          color: #000;
+          background: white;
+          box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+          text-align: center;
+          margin-bottom: 8mm;
+          border-bottom: 2px solid #000;
+          padding-bottom: 4mm;
+        }
+        
+        .header h1 {
+          font-size: 20pt;
+          margin: 2mm 0;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        }
+        
+        .header p {
+          margin: 1mm 0;
+          font-size: 11pt;
+        }
+        
+        .section {
+          margin: 5mm 0;
+        }
+        
+        .section-title {
+          font-weight: bold;
+          font-size: 13pt;
+          margin-bottom: 3mm;
+          border-bottom: 1px solid #000;
+          padding-bottom: 1mm;
+        }
+        
+        .info-grid {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          column-gap: 3mm;
+          row-gap: 1mm;
+          margin: 2mm 0;
+        }
+        
+        .label {
+          font-weight: bold;
+          white-space: nowrap;
+        }
+        
         table {
           width: 100%;
           border-collapse: collapse;
-          margin-top: 20px;
+          margin: 5mm 0;
+          font-size: 11pt;
         }
-        th, td {
-          border: 1px solid #000;
-          padding: 8px;
-          text-align: left;
-        }
+        
         th {
-          background-color: #000;
-          color: #fff;
+          background: #000 !important;
+          color: #fff !important;
           font-weight: bold;
+          padding: 2mm;
+          text-align: left;
+          border: 1px solid #000;
+        }
+        
+        td {
+          padding: 2mm;
+          border: 1px solid #000;
+          vertical-align: top;
+        }
+        
+        .grand-total {
+          font-weight: bold;
+          font-size: 14pt;
+          text-align: right;
+          margin-top: 5mm;
+          padding-top: 3mm;
+          border-top: 2px solid #000;
+        }
+        
+        .footer {
+          text-align: center;
+          margin-top: 10mm;
+          padding-top: 3mm;
+          border-top: 1px solid #000;
+          font-size: 10pt;
+        }
+        
+        /* EXACT BUTTON STYLES FROM ORIGINAL CODE */
+        .no-print {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+        
+        .no-print button {
+          /* No custom styles - matches browser default buttons */
         }
       `}</style>
 
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <h1 style={{ fontSize: 28 }}>Apple Solutions Mobile Shop</h1>
+      <div className="header">
+        <h1>APPLE SOLUTIONS</h1>
         <p>No.503/1 Dadugama, Ja-Ela</p>
         <p>Call us: 070 223 5199</p>
       </div>
 
-      <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginBottom: 20 }}>
+      <div className="no-print">
         <button onClick={() => navigate("/dashboard")}>Back to Dashboard</button>
         <button onClick={() => window.print()}>Print Invoice</button>
       </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <h2>Invoice #{invoice.number || "-"}</h2>
-        <p><strong>Issued by:</strong> {invoice.createdBy || "N/A"}</p>
-        <p><strong>Issued date:</strong> {invoice.createdAt ? invoice.createdAt.toDate().toLocaleString() : "N/A"}</p>
-        {invoice.reference && (
-          <p><strong>Reference:</strong> {invoice.reference}</p>
-        )}
+      <div className="section">
+        <div className="section-title">INVOICE DETAILS</div>
+        <div className="info-grid">
+          <span className="label">Invoice #:</span>
+          <span>{invoice.number || "-"}</span>
+          
+          <span className="label">Date:</span>
+          <span>{invoice.createdAt ? invoice.createdAt.toDate().toLocaleString() : "N/A"}</span>
+          
+          <span className="label">Issued By:</span>
+          <span>{invoice.createdBy || "N/A"}</span>
+          
+          {invoice.reference && (
+            <>
+              <span className="label">Reference:</span>
+              <span>{invoice.reference}</span>
+            </>
+          )}
+        </div>
       </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <h3>Customer Details</h3>
-        <p><strong>Name:</strong> {invoice.customer?.name || "N/A"}</p>
-        <p><strong>Phone:</strong> {invoice.customer?.phone || "N/A"}</p>
-        <p><strong>Address:</strong> {invoice.customer?.address || "N/A"}</p>
+      <div className="section">
+        <div className="section-title">CUSTOMER INFORMATION</div>
+        <div className="info-grid">
+          <span className="label">Name:</span>
+          <span>{invoice.customer?.name || "N/A"}</span>
+          
+          <span className="label">Phone:</span>
+          <span>{invoice.customer?.phone || "N/A"}</span>
+          
+          <span className="label">Address:</span>
+          <span>{invoice.customer?.address || "N/A"}</span>
+        </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>SID</th>
-            <th>Maker</th>
-            <th>Type</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Price (Rs.)</th>
-            <th>Total (Rs.)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((it, i) => (
-            <tr key={i}>
-              <td>{it.stockId || "-"}</td>
-              <td>{it.maker || "-"}</td>
-              <td>{it.type || "-"}</td>
-              <td>{it.item || "-"}</td>
-              <td>{it.quantity}</td>
-              <td>{it.price.toLocaleString()}</td>
-              <td>{(it.quantity * it.price).toLocaleString()}</td>
+      <div className="section">
+        <div className="section-title">ITEMS</div>
+        <table>
+          <thead>
+            <tr>
+              <th>SID</th>
+              <th>Maker</th>
+              <th>Type</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Price (Rs.)</th>
+              <th>Total (Rs.)</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.map((it, i) => (
+              <tr key={i}>
+                <td>{it.stockId || "-"}</td>
+                <td>{it.maker || "-"}</td>
+                <td>{it.type || "-"}</td>
+                <td>{it.item || "-"}</td>
+                <td>{it.quantity}</td>
+                <td>{it.price.toLocaleString()}</td>
+                <td>{(it.quantity * it.price).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      <h2 style={{ textAlign: "right", marginTop: 20 }}>
+      <div className="grand-total">
         Grand Total: Rs.{grandTotal.toLocaleString()}
-      </h2>
+      </div>
 
-      <div style={{ marginTop: 40, textAlign: "center" }}>
+      <div className="footer">
         <p><strong>Thank you for your business!</strong></p>
         <p>System by Wayne Systems</p>
         <p>Mobile: 078 722 3407 (Sakuna)</p>

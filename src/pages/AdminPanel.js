@@ -12,6 +12,7 @@ import {
 export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [newUser, setNewUser] = useState({ username: "", password: "", role: "user" });
+  const [editingPassword, setEditingPassword] = useState({ userId: "", newPassword: "" });
   const navigate = useNavigate();
 
   const fetchUsers = async () => {
@@ -25,6 +26,13 @@ export default function AdminPanel() {
   }, []);
 
   const handleAddUser = async () => {
+    // Check for duplicate username
+    const usernameExists = users.some(user => user.username === newUser.username);
+    if (usernameExists) {
+      alert("Username already exists");
+      return;
+    }
+
     if (!newUser.username || !newUser.password) {
       return alert("Fill all fields");
     }
@@ -49,6 +57,30 @@ export default function AdminPanel() {
       await deleteDoc(doc(db, "users", username));
       fetchUsers();
     }
+  };
+
+  const startPasswordEdit = (userId) => {
+    setEditingPassword({ userId, newPassword: "" });
+  };
+
+  const cancelPasswordEdit = () => {
+    setEditingPassword({ userId: "", newPassword: "" });
+  };
+
+  const savePassword = async (user) => {
+    if (!editingPassword.newPassword) {
+      alert("Password cannot be empty");
+      return;
+    }
+
+    await setDoc(doc(db, "users", user.username), {
+      ...user,
+      password: editingPassword.newPassword,
+    }, { merge: true });
+    
+    setEditingPassword({ userId: "", newPassword: "" });
+    fetchUsers();
+    alert("Password updated");
   };
 
   const logout = () => {
@@ -284,35 +316,96 @@ export default function AdminPanel() {
                       padding: "12px 15px", 
                       textAlign: "right" 
                     }}>
-                      <button
-                        style={{
-                          backgroundColor: user.role === "admin" ? "#6c757d" : "#ffc107",
-                          color: user.role === "admin" ? "white" : "black",
-                          border: "none",
-                          borderRadius: "4px",
-                          padding: "6px 12px",
-                          marginRight: "8px",
-                          cursor: "pointer",
-                          fontSize: "13px"
-                        }}
-                        onClick={() => toggleRole(user)}
-                      >
-                        {user.role === "admin" ? "Demote to User" : "Promote to Admin"}
-                      </button>
-                      <button
-                        style={{
-                          backgroundColor: "#dc3545",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          padding: "6px 12px",
-                          cursor: "pointer",
-                          fontSize: "13px"
-                        }}
-                        onClick={() => deleteUser(user.username)}
-                      >
-                        Delete
-                      </button>
+                      {editingPassword.userId === user.id ? (
+                        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                          <input
+                            type="password"
+                            placeholder="New password"
+                            value={editingPassword.newPassword}
+                            onChange={(e) => setEditingPassword({ ...editingPassword, newPassword: e.target.value })}
+                            style={{
+                              padding: "6px 10px",
+                              borderRadius: "4px",
+                              border: "1px solid #ddd",
+                              fontSize: "13px",
+                              width: "150px"
+                            }}
+                          />
+                          <button
+                            style={{
+                              backgroundColor: "#28a745",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "6px 12px",
+                              cursor: "pointer",
+                              fontSize: "13px"
+                            }}
+                            onClick={() => savePassword(user)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            style={{
+                              backgroundColor: "#6c757d",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "6px 12px",
+                              cursor: "pointer",
+                              fontSize: "13px"
+                            }}
+                            onClick={cancelPasswordEdit}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                          <button
+                            style={{
+                              backgroundColor: user.role === "admin" ? "#6c757d" : "#ffc107",
+                              color: user.role === "admin" ? "white" : "black",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "6px 12px",
+                              cursor: "pointer",
+                              fontSize: "13px"
+                            }}
+                            onClick={() => toggleRole(user)}
+                          >
+                            {user.role === "admin" ? "Demote to User" : "Promote to Admin"}
+                          </button>
+                          <button
+                            style={{
+                              backgroundColor: "#17a2b8",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "6px 12px",
+                              cursor: "pointer",
+                              fontSize: "13px"
+                            }}
+                            onClick={() => startPasswordEdit(user.id)}
+                          >
+                            Edit Password
+                          </button>
+                          <button
+                            style={{
+                              backgroundColor: "#dc3545",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "6px 12px",
+                              cursor: "pointer",
+                              fontSize: "13px"
+                            }}
+                            onClick={() => deleteUser(user.username)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

@@ -74,6 +74,11 @@ export default function Sales() {
     fetchInvoices();
   };
 
+  // Function to open invoice in new tab
+  const openInvoiceInNewTab = (id) => {
+    window.open(`/invoice/${id}`, '_blank', 'noopener,noreferrer');
+  };
+
   const grandTotal = searchDate
     ? invoices.reduce((total, inv) => {
         const invoiceTotal = inv.items?.reduce(
@@ -150,7 +155,8 @@ export default function Sales() {
                 {inv.items?.reduce((sum, it) => sum + it.quantity * it.price, 0) ?? 0}
               </td>
               <td style={{ display: "flex", gap: "5px" }}>
-                <button onClick={() => navigate(`/invoice/${inv.id}`)}>View</button>
+                {/* Updated to open in new tab */}
+                <button onClick={() => openInvoiceInNewTab(inv.id)}>View</button>
                 {isAdmin && (
                   <button className="red" onClick={() => handleDelete(inv.id)}>
                     Delete
