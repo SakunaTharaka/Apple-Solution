@@ -276,7 +276,8 @@ const Invoice = () => {
 
   return (
     <div style={{ 
-      padding: "32px",
+      padding: "16px",
+      paddingBottom: "120px", // Add padding for fixed footer
       minHeight: "100vh",
       backgroundColor: "#f8f9fa",
       fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
@@ -286,8 +287,8 @@ const Invoice = () => {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: "40px",
-        paddingBottom: "20px",
+        marginBottom: "16px",
+        paddingBottom: "16px",
         borderBottom: "1px solid #e0e0e0"
       }}>
         <h1 style={{ 
@@ -335,27 +336,32 @@ const Invoice = () => {
         </div>
       </div>
 
-      {/* Customer Details Section */}
+      {/* Customer and Item Details Section */}
       <div style={{
         backgroundColor: "white",
         borderRadius: "12px",
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-        padding: "32px",
-        marginBottom: "40px"
+        boxShadow: "0 6px 12px rgba(0, 0, 0, 0.08)",
+        padding: "20px",
+        marginBottom: "12px",
+        position: "relative",
+        border: "2px solid #e8f4f8"
       }}>
         <h2 style={{ 
           marginTop: 0,
-          marginBottom: "28px",
-          fontSize: "22px",
+          marginBottom: "18px",
+          fontSize: "20px",
           color: "#2c3e50",
           fontWeight: "600"
         }}>
-          Customer Details
+          Customer and Item Details
         </h2>
+        
+        {/* Customer Details */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "24px"
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "12px",
+          marginBottom: "20px"
         }}>
           <div>
             <label style={labelStyle}>Customer Name</label>
@@ -394,31 +400,20 @@ const Invoice = () => {
             />
           </div>
         </div>
-      </div>
 
-      {/* Item Details Section */}
-      <div style={{
-        backgroundColor: "white",
-        borderRadius: "12px",
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-        padding: "32px",
-        marginBottom: "40px",
-        position: "relative"
-      }}>
-        <h2 style={{ 
-          marginTop: 0,
-          marginBottom: "28px",
-          fontSize: "22px",
-          color: "#2c3e50",
-          fontWeight: "600"
-        }}>
-          Item Details
-        </h2>
+        {/* Separator line */}
+        <div style={{
+          height: "1px",
+          backgroundColor: "#e0e0e0",
+          marginBottom: "18px"
+        }}></div>
+
+        {/* Item Details */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "24px",
-          marginBottom: "32px"
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "12px",
+          marginBottom: "12px"
         }}>
           <div style={{ position: "relative" }}>
             <label style={labelStyle}>Search Item</label>
@@ -505,9 +500,9 @@ const Invoice = () => {
         <div style={{
           textAlign: "center",
           color: "#718096",
-          fontSize: "14px",
-          marginTop: "20px",
-          padding: "10px",
+          fontSize: "13px",
+          marginTop: "6px",
+          padding: "6px",
           backgroundColor: "#f7fafc",
           borderRadius: "6px"
         }}>
@@ -520,12 +515,13 @@ const Invoice = () => {
         backgroundColor: "white",
         borderRadius: "12px",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-        padding: "32px"
+        padding: "20px",
+        marginBottom: "20px"
       }}>
         <h2 style={{ 
           marginTop: 0,
-          marginBottom: "28px",
-          fontSize: "22px",
+          marginBottom: "16px",
+          fontSize: "20px",
           color: "#2c3e50",
           fontWeight: "600"
         }}>
@@ -580,33 +576,47 @@ const Invoice = () => {
             </tbody>
           </table>
         </div>
+      </div>
 
-        <div style={{ 
-          marginTop: "32px",
-          paddingTop: "24px",
-          borderTop: "2px solid #e0e0e0",
-          textAlign: "right"
+      {/* Fixed Footer with Grand Total and Save Button */}
+      <div style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "white",
+        borderTop: "2px solid #e0e0e0",
+        boxShadow: "0 -4px 6px rgba(0, 0, 0, 0.1)",
+        padding: "20px 32px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        zIndex: 1000
+      }}>
+        <h3 style={{ 
+          fontSize: "24px", 
+          color: "#2c3e50",
+          margin: 0,
+          fontWeight: "600"
         }}>
-          <h3 style={{ fontSize: "24px", color: "#2c3e50" }}>
-            Grand Total: Rs.{lineItems.reduce((sum, it) => sum + it.quantity * it.price, 0)}
-          </h3>
-          <button
-            onClick={handleSave}
-            style={{
-              padding: "12px 32px",
-              backgroundColor: "#38a169",
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "600",
-              transition: "background-color 0.3s"
-            }}
-          >
-            Save Invoice
-          </button>
-        </div>
+          Grand Total: Rs.{lineItems.reduce((sum, it) => sum + it.quantity * it.price, 0)}
+        </h3>
+        <button
+          onClick={handleSave}
+          style={{
+            padding: "12px 32px",
+            backgroundColor: "#38a169",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: "600",
+            transition: "background-color 0.3s"
+          }}
+        >
+          Save Invoice
+        </button>
       </div>
     </div>
   );
